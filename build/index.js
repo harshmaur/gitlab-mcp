@@ -20,12 +20,12 @@ if (!GITLAB_PERSONAL_ACCESS_TOKEN) {
     console.error("GITLAB_PERSONAL_ACCESS_TOKEN environment variable is not set");
     process.exit(1);
 }
-// GitLab API 공통 헤더
-const DEFAULT_HEADERS = {
-    Accept: "application/json",
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${GITLAB_PERSONAL_ACCESS_TOKEN}`,
-};
+// Remove the DEFAULT_HEADERS constant and create a function to get the URL with token
+function getGitLabUrl(path) {
+    const url = new URL(`${GITLAB_API_URL}${path}`);
+    url.searchParams.append("access_token", GITLAB_PERSONAL_ACCESS_TOKEN);
+    return url;
+}
 // API 에러 처리를 위한 유틸리티 함수
 async function handleGitLabError(response) {
     if (!response.ok) {
@@ -35,14 +35,16 @@ async function handleGitLabError(response) {
 }
 // 프로젝트 포크 생성
 async function forkProject(projectId, namespace) {
-    // API 엔드포인트 URL 생성
-    const url = new URL(`${GITLAB_API_URL}/api/v4/projects/${encodeURIComponent(projectId)}/fork`);
+    const url = getGitLabUrl(`/api/v4/projects/${encodeURIComponent(projectId)}/fork`);
     if (namespace) {
         url.searchParams.append("namespace", namespace);
     }
     const response = await fetch(url.toString(), {
         method: "POST",
-        headers: DEFAULT_HEADERS,
+        headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+        },
     });
     // 이미 존재하는 프로젝트인 경우 처리
     if (response.status === 409) {
@@ -54,10 +56,13 @@ async function forkProject(projectId, namespace) {
 }
 // 새로운 브랜치 생성
 async function createBranch(projectId, options) {
-    const url = new URL(`${GITLAB_API_URL}/api/v4/projects/${encodeURIComponent(projectId)}/repository/branches`);
+    const url = getGitLabUrl(`/api/v4/projects/${encodeURIComponent(projectId)}/repository/branches`);
     const response = await fetch(url.toString(), {
         method: "POST",
-        headers: DEFAULT_HEADERS,
+        headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+        },
         body: JSON.stringify({
             branch: options.name,
             ref: options.ref,
@@ -68,9 +73,11 @@ async function createBranch(projectId, options) {
 }
 // 프로젝트의 기본 브랜치 조회
 async function getDefaultBranchRef(projectId) {
-    const url = new URL(`${GITLAB_API_URL}/api/v4/projects/${encodeURIComponent(projectId)}`);
+    const url = getGitLabUrl(`/api/v4/projects/${encodeURIComponent(projectId)}`);
     const response = await fetch(url.toString(), {
-        headers: DEFAULT_HEADERS,
+        headers: {
+            Accept: "application/json",
+        },
     });
     await handleGitLabError(response);
     const project = GitLabRepositorySchema.parse(await response.json());
@@ -79,14 +86,15 @@ async function getDefaultBranchRef(projectId) {
 // 파일 내용 조회
 async function getFileContents(projectId, filePath, ref) {
     const encodedPath = encodeURIComponent(filePath);
-    // ref가 없는 경우 default branch를 가져옴
     if (!ref) {
         ref = await getDefaultBranchRef(projectId);
     }
-    const url = new URL(`${GITLAB_API_URL}/api/v4/projects/${encodeURIComponent(projectId)}/repository/files/${encodedPath}`);
+    const url = getGitLabUrl(`/api/v4/projects/${encodeURIComponent(projectId)}/repository/files/${encodedPath}`);
     url.searchParams.append("ref", ref);
     const response = await fetch(url.toString(), {
-        headers: DEFAULT_HEADERS,
+        headers: {
+            Accept: "application/json",
+        },
     });
     // 파일을 찾을 수 없는 경우 처리
     if (response.status === 404) {
@@ -104,10 +112,13 @@ async function getFileContents(projectId, filePath, ref) {
 }
 // 이슈 생성
 async function createIssue(projectId, options) {
-    const url = new URL(`${GITLAB_API_URL}/api/v4/projects/${encodeURIComponent(projectId)}/issues`);
+    const url = getGitLabUrl(`/api/v4/projects/${encodeURIComponent(projectId)}/issues`);
     const response = await fetch(url.toString(), {
         method: "POST",
-        headers: DEFAULT_HEADERS,
+        headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+        },
         body: JSON.stringify({
             title: options.title,
             description: options.description,
@@ -126,13 +137,12 @@ async function createIssue(projectId, options) {
     return GitLabIssueSchema.parse(data);
 }
 async function createMergeRequest(projectId, options) {
-    const url = new URL(`${GITLAB_API_URL}/api/v4/projects/${encodeURIComponent(projectId)}/merge_requests`);
+    const url = getGitLabUrl(`/api/v4/projects/${encodeURIComponent(projectId)}/merge_requests`);
     const response = await fetch(url.toString(), {
         method: "POST",
         headers: {
             Accept: "application/json",
             "Content-Type": "application/json",
-            Authorization: `Bearer ${GITLAB_PERSONAL_ACCESS_TOKEN}`,
         },
         body: JSON.stringify({
             title: options.title,
@@ -156,7 +166,7 @@ async function createMergeRequest(projectId, options) {
 }
 async function createOrUpdateFile(projectId, filePath, content, commitMessage, branch, previousPath) {
     const encodedPath = encodeURIComponent(filePath);
-    const url = new URL(`${GITLAB_API_URL}/api/v4/projects/${encodeURIComponent(projectId)}/repository/files/${encodedPath}`);
+    const url = getGitLabUrl(`/api/v4/projects/${encodeURIComponent(projectId)}/repository/files/${encodedPath}`);
     const body = {
         branch,
         content,
@@ -181,7 +191,6 @@ async function createOrUpdateFile(projectId, filePath, content, commitMessage, b
         headers: {
             Accept: "application/json",
             "Content-Type": "application/json",
-            Authorization: `Bearer ${GITLAB_PERSONAL_ACCESS_TOKEN}`,
         },
         body: JSON.stringify(body),
     });
@@ -193,7 +202,7 @@ async function createOrUpdateFile(projectId, filePath, content, commitMessage, b
     return GitLabCreateUpdateFileResponseSchema.parse(data);
 }
 async function createTree(projectId, files, ref) {
-    const url = new URL(`${GITLAB_API_URL}/api/v4/projects/${encodeURIComponent(projectId)}/repository/tree`);
+    const url = getGitLabUrl(`/api/v4/projects/${encodeURIComponent(projectId)}/repository/tree`);
     if (ref) {
         url.searchParams.append("ref", ref);
     }
@@ -202,7 +211,6 @@ async function createTree(projectId, files, ref) {
         headers: {
             Accept: "application/json",
             "Content-Type": "application/json",
-            Authorization: `Bearer ${GITLAB_PERSONAL_ACCESS_TOKEN}`,
         },
         body: JSON.stringify({
             files: files.map((file) => ({
@@ -224,13 +232,12 @@ async function createTree(projectId, files, ref) {
     return GitLabTreeSchema.parse(data);
 }
 async function createCommit(projectId, message, branch, actions) {
-    const url = new URL(`${GITLAB_API_URL}/api/v4/projects/${encodeURIComponent(projectId)}/repository/commits`);
+    const url = getGitLabUrl(`/api/v4/projects/${encodeURIComponent(projectId)}/repository/commits`);
     const response = await fetch(url.toString(), {
         method: "POST",
         headers: {
             Accept: "application/json",
             "Content-Type": "application/json",
-            Authorization: `Bearer ${GITLAB_PERSONAL_ACCESS_TOKEN}`,
         },
         body: JSON.stringify({
             branch,
@@ -255,7 +262,7 @@ async function createCommit(projectId, message, branch, actions) {
     return GitLabCommitSchema.parse(data);
 }
 async function searchProjects(query, page = 1, perPage = 20) {
-    const url = new URL(`${GITLAB_API_URL}/api/v4/projects`);
+    const url = getGitLabUrl(`/api/v4/projects`);
     url.searchParams.append("search", query);
     url.searchParams.append("page", page.toString());
     url.searchParams.append("per_page", perPage.toString());
@@ -265,7 +272,6 @@ async function searchProjects(query, page = 1, perPage = 20) {
         headers: {
             Accept: "application/json",
             "Content-Type": "application/json",
-            Authorization: `Bearer ${GITLAB_PERSONAL_ACCESS_TOKEN}`,
         },
     });
     if (!response.ok) {
@@ -285,12 +291,11 @@ async function searchProjects(query, page = 1, perPage = 20) {
     });
 }
 async function createRepository(options) {
-    const response = await fetch(`${GITLAB_API_URL}/api/v4/projects`, {
+    const response = await fetch(getGitLabUrl("/api/v4/projects"), {
         method: "POST",
         headers: {
             Accept: "application/json",
             "Content-Type": "application/json",
-            Authorization: `Bearer ${GITLAB_PERSONAL_ACCESS_TOKEN}`,
         },
         body: JSON.stringify({
             name: options.name,
@@ -310,21 +315,25 @@ async function createRepository(options) {
 }
 // MR 조회 함수
 async function getMergeRequest(projectId, mergeRequestIid) {
-    const url = new URL(`${GITLAB_API_URL}/api/v4/projects/${encodeURIComponent(projectId)}/merge_requests/${mergeRequestIid}`);
+    const url = getGitLabUrl(`/api/v4/projects/${encodeURIComponent(projectId)}/merge_requests/${mergeRequestIid}`);
     const response = await fetch(url.toString(), {
-        headers: DEFAULT_HEADERS,
+        headers: {
+            Accept: "application/json",
+        },
     });
     await handleGitLabError(response);
     return GitLabMergeRequestSchema.parse(await response.json());
 }
 // MR 변경사항 조회 함수
 async function getMergeRequestDiffs(projectId, mergeRequestIid, view) {
-    const url = new URL(`${GITLAB_API_URL}/api/v4/projects/${encodeURIComponent(projectId)}/merge_requests/${mergeRequestIid}/changes`);
+    const url = getGitLabUrl(`/api/v4/projects/${encodeURIComponent(projectId)}/merge_requests/${mergeRequestIid}/changes`);
     if (view) {
         url.searchParams.append("view", view);
     }
     const response = await fetch(url.toString(), {
-        headers: DEFAULT_HEADERS,
+        headers: {
+            Accept: "application/json",
+        },
     });
     await handleGitLabError(response);
     const data = (await response.json());
@@ -332,10 +341,13 @@ async function getMergeRequestDiffs(projectId, mergeRequestIid, view) {
 }
 // MR 업데이트 함수
 async function updateMergeRequest(projectId, mergeRequestIid, options) {
-    const url = new URL(`${GITLAB_API_URL}/api/v4/projects/${encodeURIComponent(projectId)}/merge_requests/${mergeRequestIid}`);
+    const url = getGitLabUrl(`/api/v4/projects/${encodeURIComponent(projectId)}/merge_requests/${mergeRequestIid}`);
     const response = await fetch(url.toString(), {
         method: "PUT",
-        headers: DEFAULT_HEADERS,
+        headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+        },
         body: JSON.stringify(options),
     });
     await handleGitLabError(response);
