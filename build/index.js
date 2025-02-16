@@ -5,6 +5,7 @@ import { CallToolRequestSchema, ListToolsRequestSchema, } from "@modelcontextpro
 import fetch from "node-fetch";
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
+import fs from "fs";
 import { GitLabForkSchema, GitLabReferenceSchema, GitLabRepositorySchema, GitLabIssueSchema, GitLabMergeRequestSchema, GitLabContentSchema, GitLabCreateUpdateFileResponseSchema, GitLabSearchResponseSchema, GitLabTreeSchema, GitLabCommitSchema, CreateOrUpdateFileSchema, SearchRepositoriesSchema, CreateRepositorySchema, GetFileContentsSchema, PushFilesSchema, CreateIssueSchema, CreateMergeRequestSchema, ForkRepositorySchema, CreateBranchSchema, GitLabMergeRequestDiffSchema, GetMergeRequestSchema, GetMergeRequestDiffsSchema, UpdateMergeRequestSchema, } from "./schemas.js";
 const server = new Server({
     name: "gitlab-mcp-server",
@@ -15,7 +16,7 @@ const server = new Server({
     },
 });
 const GITLAB_PERSONAL_ACCESS_TOKEN = process.env.GITLAB_PERSONAL_ACCESS_TOKEN;
-const GITLAB_API_URL = process.env.GITLAB_API_URL || "https://gitlab.com/api/v4";
+const GITLAB_API_URL = process.env.GITLAB_API_URL || "https://gitlab.com";
 if (!GITLAB_PERSONAL_ACCESS_TOKEN) {
     console.error("GITLAB_PERSONAL_ACCESS_TOKEN environment variable is not set");
     process.exit(1);
@@ -540,10 +541,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         throw error;
     }
 });
+const packageJson = JSON.parse(fs.readFileSync("package.json", "utf8"));
 async function runServer() {
     const transport = new StdioServerTransport();
     await server.connect(transport);
-    console.error("GitLab MCP Server running on stdio");
+    // package.json version
+    console.log("Using version", packageJson.version);
+    console.log("GitLab MCP Server running on stdio");
 }
 runServer().catch((error) => {
     console.error("Fatal error in main():", error);

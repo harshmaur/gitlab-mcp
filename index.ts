@@ -11,6 +11,7 @@ import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { fileURLToPath } from "url";
 import { dirname, resolve } from "path";
+import fs from "fs";
 import {
   GitLabForkSchema,
   GitLabReferenceSchema,
@@ -66,8 +67,7 @@ const server = new Server(
 );
 
 const GITLAB_PERSONAL_ACCESS_TOKEN = process.env.GITLAB_PERSONAL_ACCESS_TOKEN;
-const GITLAB_API_URL =
-  process.env.GITLAB_API_URL || "https://gitlab.com/api/v4";
+const GITLAB_API_URL = process.env.GITLAB_API_URL || "https://gitlab.com";
 
 if (!GITLAB_PERSONAL_ACCESS_TOKEN) {
   console.error("GITLAB_PERSONAL_ACCESS_TOKEN environment variable is not set");
@@ -813,10 +813,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 });
 
+const packageJson = JSON.parse(fs.readFileSync("package.json", "utf8"));
+
 async function runServer() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error("GitLab MCP Server running on stdio");
+  // package.json version
+  console.log("Using version", packageJson.version);
+  console.log("GitLab MCP Server running on stdio");
 }
 
 runServer().catch((error) => {
