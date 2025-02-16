@@ -1,6 +1,6 @@
-# @zereight/mcp-gitlab
+# @harshmaur/mcp-gitlab
 
-[![smithery badge](https://smithery.ai/badge/@zereight/gitlab-mcp)](https://smithery.ai/server/@zereight/gitlab-mcp)
+[![smithery badge](https://smithery.ai/badge/@harshmaur/gitlab-mcp)](https://smithery.ai/server/@harshmaur/gitlab-mcp)
 
 GitLab MCP(Model Context Protocol) Server.
 
@@ -10,15 +10,16 @@ GitLab MCP(Model Context Protocol) Server.
 
 ### Installing via Smithery
 
-To install GitLab MCP Server for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@zereight/gitlab-mcp):
+To install GitLab MCP Server for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@harshmaur/gitlab-mcp):
 
 ```bash
-npx -y @smithery/cli install @zereight/gitlab-mcp --client claude
+npx -y @smithery/cli install @harshmaur/gitlab-mcp --client claude
 ```
 
 ### Manual Installation
+
 ```bash
-npx @zereight/mcp-gitlab
+npx @harshmaur/mcp-gitlab
 ```
 
 ## Environment Variable Configuration
@@ -45,7 +46,7 @@ When using with the Claude App, you need to set up your API key and URLs directl
   "mcpServers": {
     "GitLab communication server": {
       "command": "npx",
-      "args": ["-y", "@zereight/mcp-gitlab"],
+      "args": ["-y", "@harshmaur/mcp-gitlab"],
       "env": {
         "GITLAB_PERSONAL_ACCESS_TOKEN": "your_gitlab_token",
         "GITLAB_API_URL": "your_gitlab_api_url"
@@ -60,7 +61,7 @@ When using with the Claude App, you need to set up your API key and URLs directl
 When using with Cursor, you can set up environment variables and run the server as follows:
 
 ```bash
-env GITLAB_PERSONAL_ACCESS_TOKEN=your_gitlab_token GITLAB_API_URL=your_gitlab_api_url npx @zereight/mcp-gitlab
+env GITLAB_PERSONAL_ACCESS_TOKEN=your_gitlab_token GITLAB_API_URL=your_gitlab_api_url npx @harshmaur/mcp-gitlab
 ```
 
 - `GITLAB_PERSONAL_ACCESS_TOKEN`: Your GitLab personal access token.
