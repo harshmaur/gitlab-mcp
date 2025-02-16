@@ -10,10 +10,10 @@ GitLab MCP(Model Context Protocol) Server.
 
 ### Installing via Smithery
 
-To install GitLab MCP Server for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@zereight/gitlab-mcp):
+To install GitLab MCP Server for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@zereight/mcp-gitlab):
 
 ```bash
-npx -y @smithery/cli install @zereight/gitlab-mcp --client claude
+npx -y @smithery/cli install @zereight/mcp-gitlab --client claude
 ```
 
 ### Manual Installation
