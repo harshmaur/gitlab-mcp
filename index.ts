@@ -813,13 +813,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 });
 
-const packageJson = JSON.parse(fs.readFileSync("package.json", "utf8"));
-
 async function runServer() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
   // package.json version
-  console.log("Using version", packageJson.version);
   console.log("GitLab MCP Server running on stdio");
 }
 

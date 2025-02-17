@@ -28,7 +28,7 @@ COPY --from=builder /app/build ./build
 COPY --from=builder /app/package.json ./
 
 # Set environment variables
-ENV GITLAB_API_URL=https://gitlab.com/api/v4
+ENV GITLAB_API_URL=https://gitlab.com
 
 # Define the command to run the application
 ENTRYPOINT ["node", "build/index.js"]
