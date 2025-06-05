@@ -1389,6 +1389,24 @@ export type GetMilestoneIssuesOptions = z.infer<typeof GetMilestoneIssuesSchema>
 export type GetMilestoneMergeRequestsOptions = z.infer<typeof GetMilestoneMergeRequestsSchema>;
 export type PromoteProjectMilestoneOptions = z.infer<typeof PromoteProjectMilestoneSchema>;
 export type GetMilestoneBurndownEventsOptions = z.infer<typeof GetMilestoneBurndownEventsSchema>;
+// Time tracking schemas
+export const TimeLogCreateSchema = z.object({
+  project_id: z.string().describe("Project ID or URL-encoded path"),
+  issue_iid: z.number().describe("The internal ID of the issue"),
+  duration: z.string().describe("The duration in GitLab format (e.g., '3h 30m')"),
+  spent_at: z.string().optional().describe("The date the time was spent (YYYY-MM-DD)"),
+  summary: z.string().optional().describe("A short description of the time spent")
+});
+
+export const TimeLogDeleteSchema = z.object({
+  project_id: z.string().describe("Project ID or URL-encoded path"),
+  issue_iid: z.number().describe("The internal ID of the issue"),
+  time_log_id: z.number().describe("The ID of the time log to delete")
+});
+
+export type TimeLogCreateOptions = z.infer<typeof TimeLogCreateSchema>;
+export type TimeLogDeleteOptions = z.infer<typeof TimeLogDeleteSchema>;
+
 export type GitLabUser = z.infer<typeof GitLabUserSchema>;
 export type GitLabUsersResponse = z.infer<typeof GitLabUsersResponseSchema>;
 export type PaginationOptions = z.infer<typeof PaginationOptionsSchema>;

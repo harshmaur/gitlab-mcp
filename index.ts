@@ -26,6 +26,8 @@ import {
   GitLabRepositorySchema,
   GitLabIssueSchema,
   GitLabMergeRequestSchema,
+  TimeLogCreateSchema,
+  TimeLogDeleteSchema,
   GitLabContentSchema,
   GitLabCreateUpdateFileResponseSchema,
   GitLabSearchResponseSchema,
@@ -264,6 +266,16 @@ const DEFAULT_FETCH_CONFIG = {
 
 // Define all available tools
 const allTools = [
+  {
+    name: "add_time_spent",
+    description: "Add time spent on an issue",
+    inputSchema: zodToJsonSchema(TimeLogCreateSchema),
+  },
+  {
+    name: "delete_time_spent",
+    description: "Delete a time spent entry from an issue",
+    inputSchema: zodToJsonSchema(TimeLogDeleteSchema),
+  },
   {
     name: "create_or_update_file",
     description: "Create or update a single file in a GitLab project",
@@ -3916,6 +3928,166 @@ server.setRequestHandler(CallToolRequestSchema, async request => {
             {
               type: "text",
               text: JSON.stringify(events, null, 2),
+            },
+          ],
+        };
+      }
+
+      case "add_time_spent": {
+        const { project_id, issue_iid, duration, spent_at, summary } = TimeLogCreateSchema.parse(
+          request.params.arguments
+        );
+
+        const mutation = `
+          mutation($projectPath: ID!, $iid: String!, $duration: String!, $spentAt: Time, $summary: String) {
+            timelogCreate(input: {
+              projectPath: $projectPath,
+              iid: $iid,
+              duration: $duration,
+              spentAt: $spentAt,
+              summary: $summary
+            }) {
+              timelog {
+                id
+                spentAt
+                timeSpent
+                summary
+                user {
+                  name
+                  username
+                }
+              }
+              errors
+            }
+          }
+        `;
+
+        const variables = {
+          projectPath: project_id,
+          iid: issue_iid.toString(),
+          duration,
+          spentAt: spent_at,
+          summary
+        };
+
+        const response = await fetch(`${GITLAB_API_URL}/graphql`, {
+          method: 'POST',
+          headers: DEFAULT_HEADERS,
+          body: JSON.stringify({
+            query: mutation,
+            variables
+          }),
+          agent: sslOptions ? new HttpsAgent(sslOptions) : undefined
+        });
+
+        type TimelogResponse = {
+          data?: {
+            timelogCreate?: {
+              timelog: {
+                id: string;
+                spentAt: string;
+                timeSpent: string;
+                summary?: string;
+                user: {
+                  name: string;
+                  username: string;
+                };
+              };
+              errors?: string[];
+            };
+          };
+          errors?: Array<{ message: string }>;
+        };
+
+        const data = (await response.json()) as TimelogResponse;
+
+        if (data.errors) {
+          throw new Error(`Failed to add time spent: ${data.errors[0].message}`);
+        }
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(data.data?.timelogCreate, null, 2),
+            },
+          ],
+        };
+      }
+
+      case "delete_time_spent": {
+        const { project_id, issue_iid, time_log_id } = TimeLogDeleteSchema.parse(
+          request.params.arguments
+        );
+
+        const mutation = `
+          mutation($projectPath: ID!, $iid: String!, $timelogId: TimelogID!) {
+            timelogDelete(input: {
+              projectPath: $projectPath,
+              iid: $iid,
+              timelogId: $timelogId
+            }) {
+              timelog {
+                id
+                spentAt
+                timeSpent
+                summary
+                user {
+                  name
+                  username
+                }
+              }
+              errors
+            }
+          }
+        `;
+
+        const variables = {
+          projectPath: project_id,
+          iid: issue_iid.toString(),
+          timelogId: time_log_id.toString()
+        };
+
+        const response = await fetch(`${GITLAB_API_URL}/graphql`, {
+          method: 'POST',
+          headers: DEFAULT_HEADERS,
+          body: JSON.stringify({
+            query: mutation,
+            variables
+          }),
+          agent: sslOptions ? new HttpsAgent(sslOptions) : undefined
+        });
+
+        type TimelogResponse = {
+          data?: {
+            timelogDelete?: {
+              timelog: {
+                id: string;
+                spentAt: string;
+                timeSpent: string;
+                summary?: string;
+                user: {
+                  name: string;
+                  username: string;
+                };
+              };
+              errors?: string[];
+            };
+          };
+          errors?: Array<{ message: string }>;
+        };
+
+        const data = (await response.json()) as TimelogResponse;
+
+        if (data.errors) {
+          throw new Error(`Failed to delete time spent: ${data.errors[0].message}`);
+        }
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(data.data?.timelogDelete, null, 2),
             },
           ],
         };
