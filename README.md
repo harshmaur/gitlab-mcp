@@ -2,6 +2,10 @@
 
 GitLab MCP(Model Context Protocol) Server.
 
+<a href="https://glama.ai/mcp/servers/@harshmaur/gitlab-mcp">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@harshmaur/gitlab-mcp/badge" alt="GitLab Server MCP server" />
+</a>
+
 ## Installation and Execution
 
 ```bash
